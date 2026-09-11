@@ -12,7 +12,14 @@ import {
   DatePicker,
   LookupInput,
   FileUpload,
+  FileItem,
 } from '@repo/ui';
+
+interface LoanApplicationFormValues {
+  companyName : string;  //사업체명
+  ownerName : string;    //대표자명
+  eamil : string;        //안내 이메일
+}
 
 export default function MobileLoanApplyPage() {
   // 폼 상태
@@ -23,7 +30,7 @@ export default function MobileLoanApplyPage() {
   const [files, setFiles] = useState<{ id: string; name: string; size: number }[]>([]);
 
   // 파일 업로드 핸들러
-  const handleUpload = (newFiles: File[]) => {
+  const handleUpload = (newFiles: FileItem[]) => {
     const items = newFiles.map((file) => ({
       id: `${Date.now()}-${file.name}`,
       name: file.name,

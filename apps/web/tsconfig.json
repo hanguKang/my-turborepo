@@ -6,7 +6,12 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "paths": {
+      "@/*": ["./app/*"] // 루트 기준 모든 폴더를 @/ 로 매핑
+      // 만약 소스 파일들이 src 폴더 안에 있다면:
+      // "@/*": ["./src/*"]
+    },
   },
   "include": [
     "**/*.ts",

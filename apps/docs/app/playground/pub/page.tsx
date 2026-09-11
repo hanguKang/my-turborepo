@@ -12,6 +12,7 @@ import {
   DatePicker,
   LookupInput,
   FileUpload,
+  FileItem,
 } from '@repo/ui';
 
 export default function MobileLoanApplyPage() {
@@ -23,7 +24,7 @@ export default function MobileLoanApplyPage() {
   const [files, setFiles] = useState<{ id: string; name: string; size: number }[]>([]);
 
   // 파일 업로드 핸들러
-  const handleUpload = (newFiles: File[]) => {
+  const handleUpload = (newFiles: FileItem[]) => {
     const items = newFiles.map((file) => ({
       id: `${Date.now()}-${file.name}`,
       name: file.name,

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { UIProvider } from "@repo/ui/providers/UIProvider";
+import EmotionRegistry from './emotion-registry';
+import { UIProvider } from "@repo/ui";
+import { ModalMotionProvider } from "@repo/ui";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,11 +25,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <UIProvider>
-          {children}
-        </UIProvider>
+        <EmotionRegistry>
+          <UIProvider>
+            <ModalMotionProvider>
+              {children}
+            </ModalMotionProvider>
+          </UIProvider>
+        </EmotionRegistry>
       </body>
     </html>
   );

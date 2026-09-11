@@ -12,3 +12,6 @@ export * from './LookupInput/LookupInput';
 export * from './RadioGroup/RadioGroup';
 export * from './FileUpload/FileUpload';
 
+// 용어 또는 선택사항 추가 
+export * from './Terms/TermsAgreement';
+export * from './Guarantor/GuarantorSection'

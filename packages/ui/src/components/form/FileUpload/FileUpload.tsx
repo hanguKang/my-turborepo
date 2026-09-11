@@ -10,7 +10,7 @@ export interface FileItem {
 
 export interface FileUploadProps {
   files: FileItem[];
-  onUpload: (newFiles: File[]) => void;
+  onUpload: (newFiles: FileItem[]) => void;
   onRemove: (id: string) => void;
   accept?: string;
   multiple?: boolean;
@@ -30,9 +30,27 @@ export const FileUpload = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
     if (!e.target.files) return;
-    const selected = Array.from(e.target.files);
-    onUpload(selected);
+    const maxSizeBytes = maxSizeMB? maxSizeMB * 1024 *1024:Infinity;
+
+    //1. 용량 초과파일 검사
+    const overSizedFiles = selectedFiles.filter((file)=>file.size > maxSizeBytes);
+
+    if(overSizedFiles.length > 0 ){
+      alert(`파일 크기는 최대 ${maxSizeMB}를 초과할 수 없습니다.`)
+      e.target.value = '';
+      return;
+    }
+
+    const validItems : FileItem[] = selectedFiles.map((file)=>({
+      id: `${file.name}-${Date.now()}`,
+      name: file.name, 
+      size: file.size, 
+      file,
+    }))
+
+    onUpload(validItems);
     e.target.value = ''; // 재업로드 가능하도록 초기화
   };
 
