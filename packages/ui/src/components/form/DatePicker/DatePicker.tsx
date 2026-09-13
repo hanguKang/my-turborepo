@@ -1,23 +1,85 @@
 'use client';
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState, useRef, useEffect } from 'react';
+import { DayPicker } from 'react-day-picker';
+import { format, parse, isValid } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import 'react-day-picker/style.css';
 
 export type DatePickerStatus = 'default' | 'warn' | 'error';
 export type DatePickerSize = 'sm' | 'md';
 
-export interface DatePickerProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'type'> {
+export interface DatePickerProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'value' | 'defaultValue' | 'onChange'> {
+  value?: string;
+  defaultValue?: string;
   status?: DatePickerStatus;
   inputSize?: DatePickerSize;
+  isError?: boolean;
+  onChange?: (dateString: string) => void;
 }
 
 export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
-  ({ status = 'default', inputSize = 'md', disabled, readOnly, className = '', ...props }, ref) => {
+  (
+    {
+      value,
+      defaultValue = '',
+      status = 'default',
+      inputSize = 'md',
+      isError,
+      disabled,
+      readOnly,
+      className = '',
+      onChange,
+      ...props
+    },
+    ref
+  ) => {
+    const currentStatus = isError ? 'error' : status;
+    const [isOpen, setIsOpen] = useState(false);
+
+    // 초기 날짜 파싱
+    const initialDateStr = value !== undefined ? value : defaultValue;
+    const initialDate = initialDateStr ? parse(initialDateStr, 'yyyy-MM-dd', new Date()) : undefined;
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+      isValid(initialDate) ? initialDate : undefined
+    );
+
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // 외부 클릭 시 팝오버 닫기
+    useEffect(() => {
+      const handleOutsideClick = (e: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleOutsideClick);
+      return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
+    // 날짜 선택 이벤트
+    const handleSelect = (date: Date | undefined) => {
+      if (date) {
+        const formatted = format(date, 'yyyy-MM-dd');
+        setSelectedDate(date);
+        onChange?.(formatted);
+      } else {
+        setSelectedDate(undefined);
+        onChange?.('');
+      }
+      setIsOpen(false);
+    };
+
+    const displayValue = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+
     return (
       <div
+        ref={containerRef}
         className={[
           'wds-datepicker-container',
           `size-${inputSize}`,
-          `status-${status}`,
+          `status-${currentStatus}`,
           disabled ? 'is-disabled' : '',
           readOnly ? 'is-readonly' : '',
           className,
@@ -27,14 +89,34 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
       >
         <input
           ref={ref}
-          type="date"
+          type="text"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          aria-label="날짜 선택"
+          readOnly
           disabled={disabled}
-          readOnly={readOnly}
+          value={displayValue}
+          onClick={() => !disabled && !readOnly && setIsOpen((prev) => !prev)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              !disabled && !readOnly && setIsOpen((prev) => !prev);
+            }
+          }}
           className="wds-datepicker-element"
           {...props}
         />
-        <span className="wds-datepicker-icon" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={isOpen ? '달력 닫기' : '달력 열기'}
+          disabled={disabled || readOnly}
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="wds-datepicker-icon-btn"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path
               d="M12.667 2.667H3.333C2.597 2.667 2 3.264 2 4v9.333C2 14.07 2.597 14.667 3.333 14.667h9.334c.736 0 1.333-.597 1.333-1.334V4c0-.736-.597-1.333-1.333-1.333zM10.667 1.333v2.667M5.333 1.333v2.667M2 6.667h12"
               stroke="currentColor"
@@ -43,7 +125,24 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
               strokeLinejoin="round"
             />
           </svg>
-        </span>
+        </button>
+
+        {isOpen && (
+          <div
+            className="wds-calendar-popover"
+            role="dialog"
+            aria-modal="true"
+            aria-label="날짜 선택 달력"
+          >
+            <DayPicker
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleSelect}
+              locale={ko}
+              autoFocus
+            />
+          </div>
+        )}
 
         <style jsx>{`
           .wds-datepicker-container {
@@ -75,22 +174,16 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
             outline: none;
             background: transparent;
             color: var(--wanted-color-text-primary, #171717);
-            font-family: inherit;
-          }
-          .wds-datepicker-element::-webkit-calendar-picker-indicator {
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
             cursor: pointer;
           }
-          .wds-datepicker-icon {
-            pointer-events: none;
-            color: var(--wanted-color-text-tertiary, #8e9499);
+          .wds-datepicker-icon-btn {
+            background: none;
+            border: none;
+            padding: 0;
             display: flex;
             align-items: center;
+            color: var(--wanted-color-text-tertiary, #8e9499);
+            cursor: pointer;
           }
           .wds-datepicker-container:focus-within {
             border-color: var(--wanted-color-primary, #3366ff);
@@ -102,13 +195,16 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
           .status-error {
             border-color: var(--wanted-color-danger, #e53e3e);
           }
-          .is-readonly {
-            background-color: var(--wanted-color-bg-gray, #f7f8f9);
-          }
-          .is-disabled {
-            background-color: var(--wanted-color-bg-disabled, #f0f2f5);
-            cursor: not-allowed;
-            opacity: 0.6;
+          .wds-calendar-popover {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 1000;
+            background-color: #ffffff;
+            border: 1px solid var(--wanted-color-border-default, #e1e4e6);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            padding: 12px;
           }
         `}</style>
       </div>
